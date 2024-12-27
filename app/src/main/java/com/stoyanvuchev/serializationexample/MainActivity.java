@@ -14,6 +14,7 @@ import androidx.core.view.WindowInsetsCompat;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -42,11 +43,42 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // Initialize the Plane.
-        initializePlane();
+        // initializePlane();
 
         // Attempt to serialize and then to deserialize the Plane.
-        serializePlane();
+        // serializePlane();
 
+        packetize();
+
+    }
+
+    private void packetize() {
+        new Thread(() -> {
+            try {
+
+                // Dummy data
+                byte[] data = new byte[127750];
+                for (int i = 0; i < data.length; i++) {
+                    data[i] = (byte) (i % 256);
+                }
+
+                // Packetize the data.
+                int packetSize = 100000;
+                List<byte[]> packets = AdaptivePacketization.packetize(data, packetSize);
+
+                // Send the packets.
+                fileOutputStream = openFileOutput("Plane.bin", Context.MODE_PRIVATE);
+                Sender.sendPackets(fileOutputStream, packets);
+
+                // Receive data
+                fileInputStream = openFileInput("Plane.bin");
+                byte[] receivedData = Receiver.receivePackets(fileInputStream);
+                System.out.println(TAG + ": Received data size: " + receivedData.length);
+
+            } catch (IOException | InterruptedException e) {
+                Log.e(TAG, "Error: " + e.getMessage());
+            }
+        }).start();
     }
 
     private void initializePlane() {
